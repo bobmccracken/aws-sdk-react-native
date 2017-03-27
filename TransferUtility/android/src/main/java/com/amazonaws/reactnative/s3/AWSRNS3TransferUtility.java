@@ -188,24 +188,33 @@ public class AWSRNS3TransferUtility extends ReactContextBaseJavaModule {
     @ReactMethod
     public void upload(final ReadableMap options, final Promise promise) {
         if (!options.hasKey(REQUESTID)) {
+            log.e(this.getClass().toString(), "requestid is not supplied");
             throw new IllegalArgumentException("requestid is not supplied");
         }
         final String requestID = options.getString(REQUESTID);
         final Map<String, Object> map = requestMap.get(requestID);
+        Log.d(this.getClass().toString(), "Start upload: " + requestID);
         if (map == null) {
+          log.e(this.getClass().toString(), "requestid is invalid");
             throw new IllegalArgumentException("requestid is invalid");
         }
         final TransferObserver observer;
         try {
+            log.d(this.getClass().toString(), "trying observer");
+            log.d(this.getClass().toString(), (String) map.get(BUCKET));
+            log.d(this.getClass().toString(), (String) map.get(KEY));
+            log.d(this.getClass().toString(), (String) map.get(PATH));
             observer = transferUtility.upload(
                     (String) map.get(BUCKET),
                     (String) map.get(KEY),
                     new File((String) map.get(PATH))
             );
         } catch (final AmazonServiceException e) {
+            log.e("ase " + e.getErrorCode() + " :: " + e.getErrorMessage());
             promise.reject(e.getErrorCode(), e.getErrorMessage(), e);
             return;
         } catch (final AmazonClientException e) {
+          log.e("ace " + e.getMessage());
             promise.reject("", e.getMessage(), e);
             return;
         }
