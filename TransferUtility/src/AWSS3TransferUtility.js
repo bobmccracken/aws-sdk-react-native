@@ -27,6 +27,10 @@ if (Platform.OS === 'ios'){
 }else{
   listener = DeviceEventEmitter;
 }
+
+var progressHandlers = {};
+var completionHandlers = {};
+
 export default class AWSS3TransferUtility{
   constructor(){
     listener.addListener("ProgressEventUtility", async event => {
@@ -36,6 +40,25 @@ export default class AWSS3TransferUtility{
       this.completionHandlerEvent(event.requestid,event.error,event.request);
     });
   }
+
+  addProgressHandler(requestid, handler) {
+    if(progressHandlers[requestid]) {
+      progressHandlers[requestid].push(handler);
+    }
+    else {
+      progressHandlers[requestid] = [handler];
+    }
+  }
+
+  addCompletionHandler(requestid, handler) {
+    if(completionHandlers[requestid]) {
+      completionHandlers[requestid].push(handler);
+    }
+    else {
+      completionHandlers[requestid] = [handler];
+    }
+  }
+
   /*
   * The progress feedback block.
   * @param {string} requestid
@@ -53,6 +76,11 @@ export default class AWSS3TransferUtility{
   * }
   */
   progressEvent(requestid,completedUnits,totalUnits,fractionCompleted,type){
+    if(progressHandlers[requestid]) {
+      progressHandlers[requestid].forEach(function(handler) {
+        handler(requestid, completedUnits, totalUnits, fractionCompleted, type);
+      })
+    }
   }
   /*
   * The completion feedback block.
@@ -67,6 +95,17 @@ export default class AWSS3TransferUtility{
   * }
   */
   completionHandlerEvent(requestid,error,request){
+    if(completionHandlers[requestid]) {
+      completionHandlers[requestid].forEach(function(handler) {
+        handler(requestid, error, request);
+      })
+
+      delete completionHandlers[requestid];
+
+      if(progressHandlers[requestid]) {
+        delete progressHandlers[requestid];
+      }
+    }
   }
   /*
   * Constructs a new TransferUtility specifying the region
